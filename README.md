@@ -115,6 +115,8 @@ df = StringIO(finalOutput)
 
 We are attempting to find all of the journal entries that don't have a balancing entry. For every credit, there must be a debit. However, Oracle allows the creation of journal entires that don't balance. The difficulty in this analysis is that not all journal entry amounts are the same, so a 5.00 credit could have been balanced with five 1.00 debits for example. This is similar to the 'Two Sum' LeetCode problem where you're given an array of integers and an integer target, and you're tasked with returning indices of the numbers such that they add up to the target, and you may not use the same element twice.
 
+Brute force Time complexity: $O(n^2)$
+ 
 ```Python
 #filter the data
 df = gl[(gl['Client_Number'] == client_code) & (gl['Tax_Value'] == tax_code)]
