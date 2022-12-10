@@ -22,9 +22,7 @@ I leveraged the Oracle Business Intelligence (BI) Publisher to create a report t
 
 ![image](https://user-images.githubusercontent.com/46463801/206571110-6334ab83-b241-426e-9ad7-8274da318a71.png)
 
-At this time Oracle Fusion allows the option to define the parameters to pass to the query, define lists of values for users to select parameter values, and define event triggers. I did not need to add a bind variable to the query as I was in need of a static list. If I were fetching an employee listing, for example, I might want to be able to choose a specific department and pass that into the query.
-
-As I was pulling information from several different databases, I then leveraged Oracle Fusion’s data model diagram to help link and define a master-detail (or parent-child) relationship between data sets. Defining an element-level link enables you to establish the binding between the elements of the master and detail data sets. In many cases, the data fetched for one part of the data set (or query) is determined by the data fetched for another part.
+After defining the parameters to pass to the query, defining lists of values for users to select parameter values (none in this case), and defining event triggers, I leveraged Oracle Fusion’s data model diagram to help link and define a master-detail (or parent-child) relationship between data sets. Defining an element-level link enables you to establish the binding between the elements of the master and detail data sets. In many cases, the data fetched for one part of the data set (or query) is determined by the data fetched for another part.
 
 ![image](https://user-images.githubusercontent.com/46463801/206572260-79fa7f70-ee8b-4d32-86f8-9b8d4bc4bdf9.png)
 
@@ -104,6 +102,7 @@ with open('output.xml', 'r') as readXML:
       x = x.replace('>','').replace('</','')
 finalOutput = base64.b64decode(x + '==')
 finalOutput = finalOutput.decode('utf-8', errors='ignore')
+
 df = StringIO(finalOutput)
 ```
 
