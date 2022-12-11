@@ -1,7 +1,7 @@
 # Oracle Fusion Journal Entry (JE) Analysis
 
 ## Executive Summary
-The primary goal of the analysis was to extract journal entries from the Oracle Fusion ERP system and identify unbalanced entries for each customer. The data structure extracted from Oracle contained **1,309,144 rows of data**. The analysis would need to be performed in **1,376 iterations**, one for each unique customer in Oracle Fusion.
+The primary goal of the analysis was to extract journal entries from the Oracle Fusion ERP system and identify unbalanced entries for each customer. The data structure extracted from Oracle contained **1,309,144 rows of data**. The analysis would need to be performed in **1,376 iterations**, one for each unique customer in Oracle Fusion. For the analysis I used SQL, Python, and PowerBI.
 
 ### Step #1: Write SQL query to pull data into Oracle Fusion's data model editor.
 I began the analysis by writing a SQL query to fetch the appropriate data from the database. The query pulls a unique identifier column for each journal entry, and includes client number, client name, journal description, date, and amount for all of the journal entries made in the last year.
@@ -100,99 +100,104 @@ with open('output.xml', 'r') as readXML:
     if 'reportBytes' in line: # The report data is contained in the ‘reportBytes’ element and is a base-64 encoded string which will need to be decoded.  
       x = line.split('reportBytes')[1]
       x = x.replace('>','').replace('</','')
-finalOutput = base64.b64decode(x + '==')
-finalOutput = finalOutput.decode('utf-8', errors='ignore')
-
-df = StringIO(finalOutput)
+output = base64.b64decode(x + '==')
+output = StringIO(output.decode('utf-8', errors='ignore'))
 ```
 
-## Step 5: Data analysis using Python
+## Step 4: Data analysis using Python
 
-We are attempting to find all of the journal entries that don't have a balancing entry. For every credit, there must be a debit. However, Oracle allows the creation of journal entires that don't balance. The difficulty in this analysis is that not all journal entry amounts are the same, so a 5.00 credit could have been balanced with five 1.00 debits for example. This is similar to the 'Two Sum' LeetCode problem where you're given an array of integers and an integer target, and you're tasked with returning indices of the numbers such that they add up to the target, and you may not use the same element twice.
+Oracle Fusion allows the creation of journal entires that don't balance (debits that don't have a credit and vice versa), so I need to identify all of the journal entries that don't have a balancing entry. I approached this using a technique similar to hashmap where I created a list of all of the unique journal entry amounts and then counted the number of occurances of each amount. If the number of debits for each amount does not match the number of credits, then I knew that there was an unbalanced entry and printed 'No match' in the Research Notes column. If the number of debits matched the number of credits, then I printed the dates that the balancing entry (or entries) occured in the Research Notes column.
 
-Since there could be many different lines that add up to the , 
-Brute force Time complexity: $O(n^2)$ 
+Since I used a brute force approach I calculated the time complexity to be $O(n^2)$.
 
 ```Python
-# find a unique list of journal entry amounts and input those into a list
-nums = df[df['Amount']].unique()
-nums = list(set([abs(ele) for ele in nums])) # sets the absolute value of each amount and de-duplicates.
+import numpy as np
+import pandas as pd
 
-# count the number of occurances of each journal entry amount by creating a list of lists (e.g. [[amount 1, count 1], [amount 2, count 2]]...)
-cnts_of_amts = []
-for num in setnums:
-  if num != 0: # $0 value journal entires can be ignored
-    cnts_of_amts.append([[x, nums.count(x)], [(x * -1), nums.count(x * -1)]]) # create a list of counts of the positive values and negative values
+def je_analysis(client_code):
+  # filter the entire Oracle Fusion dataset to a single customer - we'll perform the analysis one customer at a time
+  df = output[output['Client_Number'] == client_code] 
 
-# for each item in the list find which items match and find which items don't match
-for count in cnts_of_amts:
-  # if the items match, print all of the matching dates in the research notes column
-  if count[0][1] == count[1][1]: # this is a debit that has a matching credit
-    for c in count:
-      date_list = list(set([df.loc[df['Amount'] == (c[0] * -1), 'Accounting_Date'].to_string(index=False)][0].split('\n'))) # get all dates from the inverse amount, turn into list, and remove dupes
-      if len(date_list) == 1:
-        df.loc[df['Amount'] == c[0], 'Research_Notes'] = f"Balancing entry occurs on date: ('{date_list[0]}')"
-      elif len(date_list) > 1:
-        df.loc[df['Amount'] == c[0], 'Research_Notes'] = f"Balancing entry occurs on one of the following dates: {*sorted(date_list),}"
+  # find a unique list of journal entry amounts and input those into a list
+  nums = df[df['Amount']].unique()
+  nums = list(set([abs(ele) for ele in nums])) # sets the absolute value of each amount and de-duplicates.
 
-  # if the items don't match, print the no match for the unmatched amounts and print the matching dates for all of the matching dates in the research notes column
-  elif  count[0][1] != count[1][1]: # this is a debit that DOES NOT have a matching credit
-    if count[0][1] > count[1][1]:
-      remove_idx = df.loc[df['Amount'] == count[0][0]].index.values
-      for i in range(abs(count[0][1] - count[1][1])):
-        # print no match for the amounts that don't have a match ie the difference
-        df.loc[remove_idx[i], 'Research_Notes'] = "No match"
+  # count the number of occurances of each journal entry amount by creating a list of lists (e.g. [[amount 1, count 1], [amount 2, count 2]]...)
+  cnts_of_amts = []
+  for num in setnums:
+    if num != 0: # $0 value journal entires can be ignored
+      cnts_of_amts.append([[x, nums.count(x)], [(x * -1), nums.count(x * -1)]]) # create a list of counts of the positive values and negative values
 
-      if count[0][1] > 1:
-        for i in range(abs(count[0][1] - count[1][1]), count[0][1]):
-          # print matching dates for the first list item if the first list item is greater than the second
-          date_list = list(set([df.loc[df['Amount'] == (count[0][0] * -1), 'Accounting_Date'].to_string(index=False)][0].split('\n'))) # get all dates from the inverse amount, turn into list, and remove dupes
-          include_idx = df.loc[df['Amount'] == count[0][0]].index.values
-          if len(date_list) == 1:
-            df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on date: ('{date_list[0]}')"
-          elif len(date_list) > 1:
-            df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on one of the following dates: {*sorted(date_list),}"
+  # for each item in the list find which items match and find which items don't match
+  for count in cnts_of_amts:
+    # if the items match, print all of the matching dates in the research notes column
+    if count[0][1] == count[1][1]: # this is a debit that has a matching credit
+      for c in count:
+        date_list = list(set([df.loc[df['Amount'] == (c[0] * -1), 'Accounting_Date'].to_string(index=False)][0].split('\n'))) # get all dates from the inverse amount, turn into list, and remove dupes
+        if len(date_list) == 1:
+          df.loc[df['Amount'] == c[0], 'Research_Notes'] = f"Balancing entry occurs on date: ('{date_list[0]}')"
+        elif len(date_list) > 1:
+          df.loc[df['Amount'] == c[0], 'Research_Notes'] = f"Balancing entry occurs on one of the following dates: {*sorted(date_list),}"
 
-        for i in range(count[1][1]):
-          # print dates for the second list item
-          date_list = list(set([df.loc[df['Amount'] == (count[1][0] * -1), 'Accounting_Date'].to_string(index=False)][0].split('\n'))) # get all dates from the inverse amount, turn into list, and remove dupes
-          include_idx = df.loc[df['Amount'] == count[1][0]].index.values
-          if len(date_list) == 1:
-            df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on date: ('{date_list[0]}')"
-          elif len(date_list) > 1:
-            df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on one of the following dates: {*sorted(date_list),}"
+    # if the items don't match, print the no match for the unmatched amounts and print the matching dates for all of the matching dates in the research notes column
+    elif  count[0][1] != count[1][1]: # this is a debit that DOES NOT have a matching credit
+      if count[0][1] > count[1][1]:
+        remove_idx = df.loc[df['Amount'] == count[0][0]].index.values
+        for i in range(abs(count[0][1] - count[1][1])):
+          # print no match for the amounts that don't have a match ie the difference
+          df.loc[remove_idx[i], 'Research_Notes'] = "No match"
 
-    elif count[1][1] > count[0][1]:
-      remove_idx = df.loc[df['Amount'] == count[1][0]].index.values
-      for i in range(abs(count[1][1] - count[0][1])):
-        # print no match for the amounts that don't have a match ie the difference
-        df.loc[remove_idx[i], 'Research_Notes'] = "No match"
+        if count[0][1] > 1:
+          for i in range(abs(count[0][1] - count[1][1]), count[0][1]):
+            # print matching dates for the first list item if the first list item is greater than the second
+            date_list = list(set([df.loc[df['Amount'] == (count[0][0] * -1), 'Accounting_Date'].to_string(index=False)][0].split('\n'))) # get all dates from the inverse amount, turn into list, and remove dupes
+            include_idx = df.loc[df['Amount'] == count[0][0]].index.values
+            if len(date_list) == 1:
+              df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on date: ('{date_list[0]}')"
+            elif len(date_list) > 1:
+              df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on one of the following dates: {*sorted(date_list),}"
 
-      if count[1][1] > 1:
-        for i in range(abs(y[1][1] - count[0][1]), count[1][1]):
-          # print dates for the first list item if the second list item is greater than the first
-          date_list = list(set([df.loc[df['Amount'] == (count[1][0] * -1), 'Accounting_Date'].to_string(index=False)][0].split('\n'))) # get all dates from the inverse amount, turn into list, and remove dupes
-          include_idx = df.loc[df['Amount'] == count[1][0]].index.values
-          if len(date_list) == 1:
-            df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on date: ('{date_list[0]}')"
-          elif len(date_list) > 1:
-            df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on one of the following dates: {*sorted(date_list),}"
+          for i in range(count[1][1]):
+            # print dates for the second list item
+            date_list = list(set([df.loc[df['Amount'] == (count[1][0] * -1), 'Accounting_Date'].to_string(index=False)][0].split('\n'))) # get all dates from the inverse amount, turn into list, and remove dupes
+            include_idx = df.loc[df['Amount'] == count[1][0]].index.values
+            if len(date_list) == 1:
+              df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on date: ('{date_list[0]}')"
+            elif len(date_list) > 1:
+              df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on one of the following dates: {*sorted(date_list),}"
 
-        for i in range(count[0][1]):
-          # print dates for the second list item
-          date_list = list(set([df.loc[df['Amount'] == (count[0][0] * -1), 'Accounting_Date'].to_string(index=False)][0].split('\n')))
-          include_idx = df.loc[df['Amount'] == count[0][0]].index.values
-          if len(date_list) == 1:
-            df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on date: ('{date_list[0]}')"
-          elif len(date_list) > 1:
-            df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on one of the following dates: {*sorted(date_list),}"
+      elif count[1][1] > count[0][1]:
+        remove_idx = df.loc[df['Amount'] == count[1][0]].index.values
+        for i in range(abs(count[1][1] - count[0][1])):
+          # print no match for the amounts that don't have a match ie the difference
+          df.loc[remove_idx[i], 'Research_Notes'] = "No match"
 
-# if the amount is zero, print no match in the research column
-df.loc[df['Amount'] == 0, 'Research_Notes'] = "Amount is zero - ignore"
+        if count[1][1] > 1:
+          for i in range(abs(y[1][1] - count[0][1]), count[1][1]):
+            # print dates for the first list item if the second list item is greater than the first
+            date_list = list(set([df.loc[df['Amount'] == (count[1][0] * -1), 'Accounting_Date'].to_string(index=False)][0].split('\n'))) # get all dates from the inverse amount, turn into list, and remove dupes
+            include_idx = df.loc[df['Amount'] == count[1][0]].index.values
+            if len(date_list) == 1:
+              df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on date: ('{date_list[0]}')"
+            elif len(date_list) > 1:
+              df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on one of the following dates: {*sorted(date_list),}"
+
+          for i in range(count[0][1]):
+            # print dates for the second list item
+            date_list = list(set([df.loc[df['Amount'] == (count[0][0] * -1), 'Accounting_Date'].to_string(index=False)][0].split('\n')))
+            include_idx = df.loc[df['Amount'] == count[0][0]].index.values
+            if len(date_list) == 1:
+              df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on date: ('{date_list[0]}')"
+            elif len(date_list) > 1:
+              df.loc[include_idx[i], 'Research_Notes'] = f"Balancing entry occurs on one of the following dates: {*sorted(date_list),}"
+
+  # if the amount is zero, print no match in the research column
+  df.loc[df['Amount'] == 0, 'Research_Notes'] = "Amount is zero - ignore"
+  return df
 
   ```
 
-The resulting dataframe looks like this. As you can see the research notes column was added in the Python script and it identifies journal entries that have a balancing entry, and for any journal that doesn't balance leaves a note that that there is 'No match.' The list can now be filtered down to just those journal entries without a match and researched.
+The resulting dataframe looks like this. As you can see the research notes column was added in the Python script and it identifies journal entries that have a balancing entry, and for any journal entry that doesn't balance the Research Notes column displays 'No match.'
 
 | Unique_Identifier | Client_Number | Journal_Line_Description | Journal_Creation_Date | Amount | Research_Notes
 | --- | --- | --- | --- | --- | --- |
@@ -201,4 +206,23 @@ The resulting dataframe looks like this. As you can see the research notes colum
 | A0164 | B55 | 147556 Federal | 1/26/2022 | -85.12 | Balancing entry occurs on date: ('12/08/2022')
 | A7880 | B55 | Bi-Weekly Regular | 1/26/2022 | 10.50 | No match
 
-The analysis looped 1,376 times, once for each customer in Oracle Fusion.
+The dataset pulled from Oracle Fusion contained 1,376 customers, and since journal entries need to balance by customer, I needed to loop through the analysis for every customer and then concatenate the resulting dataframes together to create a master dataframe. 
+
+```Python
+df_list = []
+client_codes = output[output['Client_Number']].unique()
+for client_code in client_codes:
+  temp_df = je_analysis(client_code)
+  df_list.append(temp_df)
+master_df = pd.concat(df_list, ignore_index=True)
+```
+
+The master dataframe can now be filtered down to just those journal entries without a balancing entry.
+
+```Python
+master_df[master_df['Research_Notes'] == 'No match']
+```
+
+There were 1,052 journal entries that did not have a balancing entry. Those entries would need to be audited to determine the root cause of the issue.
+
+## Step 4: Visualize the results in PowerBI
