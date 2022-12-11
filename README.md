@@ -1,10 +1,20 @@
 # Oracle Fusion Journal Entry (JE) Analysis
 
-## Executive Summary
-The primary goal of the analysis was to extract journal entries from the Oracle Fusion ERP system and identify unbalanced entries for each customer. The data structure extracted from Oracle contained **1,309,144 rows of data**. The analysis would need to be performed in **1,376 iterations**, one for each unique customer in Oracle Fusion. For the analysis I used SQL, Python, and PowerBI.
+**Project goal**
+ - The primary goal of the analysis was to extract journal entries from the Oracle Fusion ERP system and identify unbalanced entries for each customer.
+ - The analysis and it's insights is used in the audit program of a large national accounting firm
 
-### Step #1: Write SQL query to pull data into Oracle Fusion's data model editor.
-I began the analysis by writing a SQL query to fetch the appropriate data from the database. The query pulls a unique identifier column for each journal entry, and includes client number, client name, journal description, date, and amount for all of the journal entries made in the last year.
+**Tech used**
+- SQL
+- Python
+- PowerBI
+ 
+**Datasets**
+ - The data structure was extracted from Oracle Fusion and contained **1,309,144 rows of data**.
+ - The analysis was performed for **1,376 iterations**, one for each unique customer in the Oracle Fusion dataset.
+
+## Step #1: Query Oracle Fusion's databases using SQL.
+I began the analysis by writing a SQL query to fetch the appropriate data from the database. I needed to analyze all of the journal entries on the chart of accounts, so the SQL query needed to pull a unique identifier for each journal entry, client number, client name, journal description, date, and amount for all of the journal entries made in the last year.
 
 ```MySQL
 SELECT  SYS_GUID() as "Unique Identifier", # pull a unique identifier column
@@ -18,20 +28,16 @@ FROM    "FUSION"."GL_CODE_COMBINATIONS" "GL_CODE_COMBINATIONS",
 WHERE   "GL_CODE_COMBINATIONS"."CODE_COMBINATION_ID"="GL_JE_LINES"."CODE_COMBINATION_ID"
 AND     "GL_CODE_COMBINATIONS"."SEGMENT<i>" IN ('<Account>') and "GL_JE_LINES"."EFFECTIVE_DATE" >= SYSDATE - INTERVAL '365' DAY
 ```
-I leveraged the Oracle Business Intelligence (BI) Publisher to create a report to analyze all of the journal entries on the chart of accounts. Oracle Fusion’s data model editor was used to write the logic to retrieve data from Oracle Fusion’s tables and create the data sets to be used in the report. 
+
+After defining the parameters to pass to the query, defining lists of values for users to select parameter values (none in this case), and defining event triggers, I input the SQL query into Oracle Fusion’s data model diagram. Oracle Fusion’s data model editor was used to write the logic to retrieve data from Oracle Fusion’s tables and create the data sets to be used in the report. I then needed to define a master-detail (or parent-child) relationship between data sets. Defining an element-level link enabled me to establish the binding between the elements of the master and detail data sets.
 
 ![image](https://user-images.githubusercontent.com/46463801/206571110-6334ab83-b241-426e-9ad7-8274da318a71.png)
 
-After defining the parameters to pass to the query, defining lists of values for users to select parameter values (none in this case), and defining event triggers, I leveraged Oracle Fusion’s data model diagram to help link and define a master-detail (or parent-child) relationship between data sets. Defining an element-level link enables you to establish the binding between the elements of the master and detail data sets. In many cases, the data fetched for one part of the data set (or query) is determined by the data fetched for another part.
-
-![image](https://user-images.githubusercontent.com/46463801/206572260-79fa7f70-ee8b-4d32-86f8-9b8d4bc4bdf9.png)
-
-## Step #2: Create the Oracle BI Publisher report
-I created an Oracle BI Publisher report which utilizes Oracle Fusion data models to create end user reports in Excel, csv, pdf, etc. The report was created in csv format due to the large amount of data (remember the analysis contains 1,309,144 rows of data) and utlizes the data model created in step #1 above.
+I then used the data model to create an Oracle Business Intelligence (BI) Publisher report which will be the report that is called in teh steps described below. Oracle BI Publisher reports utilize data models to create end user reports in Excel, csv, pdf, etc. The report was created in csv format due to the large amount of data (remember the analysis contains 1,309,144 rows of data).
 
 ![image](https://user-images.githubusercontent.com/46463801/206574604-b68212b8-3779-40b7-9895-5ef13c374432.png)
 
-## Step 3: Make an HTTP request to the Oracle API
+## Step 2: Make an HTTP request to the Oracle API
 Now I was ready to extract the data from Oracle Fusion using the Oracle API. Oracle utilizes a SOAP webservice, so I needed to write a Python script that could make a request to the Oracle Fusion Cloud server and then decipher the XML document containing the report. To do this use the following parameters for the request.
 
 **HTTP Method**
@@ -104,9 +110,9 @@ output = base64.b64decode(x + '==')
 output = StringIO(output.decode('utf-8', errors='ignore'))
 ```
 
-## Step 4: Data analysis using Python
+## Step 3: Analyze datasets with Python
 
-Oracle Fusion allows the creation of journal entires that don't balance (debits that don't have a credit and vice versa), so I need to identify all of the journal entries that don't have a balancing entry. I approached this using a technique similar to hashmap where I created a list of all of the unique journal entry amounts and then counted the number of occurances of each amount. If the number of debits for each amount does not match the number of credits, then I knew that there was an unbalanced entry and printed 'No match' in the Research Notes column. If the number of debits matched the number of credits, then I printed the dates that the balancing entry (or entries) occured in the Research Notes column.
+Oracle Fusion allows the creation of journal entires that don't balance (debits that don't have a credit and vice versa), so I need to identify all of the journal entries that don't have a balancing entry. I approached this using a technique similar to the two pass hashmap technique where I created a list of all of the unique journal entry amounts and then counted the number of occurances of each amount. If the number of debits for each amount does not match the number of credits, then I knew that there was an unbalanced entry and printed 'No match' in the Research Notes column. If the number of debits matched the number of credits, then I printed the dates that the balancing entry (or entries) occured in the Research Notes column.
 
 Since I used a brute force approach I calculated the time complexity to be $O(n^2)$.
 
@@ -217,7 +223,7 @@ for client_code in client_codes:
 master_df = pd.concat(df_list, ignore_index=True)
 ```
 
-The master dataframe can now be filtered down to just those journal entries without a balancing entry.
+The master dataframe was then filtered to just those journal entries without a balancing entry.
 
 ```Python
 master_df[master_df['Research_Notes'] == 'No match']
