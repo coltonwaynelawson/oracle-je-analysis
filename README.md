@@ -69,7 +69,7 @@ Authorization: Basic <Base-64 encoded username:password>
 </soap:Envelope>
 ```
 
-I leveraged the requests library in Python, as requests is an easy to use and simple HTTP library for Python. I passed the parameters to make an API call to request the report that I created in Oracle Fusion in step #2 above.
+I leveraged the requests library in Python, as requests is an easy to use and simple HTTP library for Python. I passed the parameters to make an API call to request the report that I created in Oracle Fusion in the step above.
 
 Because the dataset was very large, the client was sometimes receiving an HTTP status code of 500 with the message Internal Server Error as a response. The HTTP status code 500 is a generic error response which means that the server encountered an unexpected condition that prevented it from fulfilling the request. Because of this I included a command to try 5 more times to connect to Oracle, sleeping for 30 seconds in between attempts to allow the server to process the data model.
 
