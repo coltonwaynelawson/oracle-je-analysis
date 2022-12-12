@@ -250,4 +250,4 @@ The dataset was then connected to PowerBI and the dataset was transformed and sh
 
 I then created a dashboard to allow the audience to visualize the analysis and gain insights into the data set. The dashboard helped identify the customers with the largest impact on the unbalanced entry issue, spot potential areas for improvement, and create a continuous monitoring tool that can be leveraged to understand the current state of the unbalanced journal entry issue. The dashboard displays the total number of unbalanced entries that need to be resolved, the total amount unbalanced during the month and how that compares to prior months, and the customers that are the biggest offenders. The dashboard will be refreshed and published on a monthly basis.
 
-![image](https://user-images.githubusercontent.com/46463801/206954056-fa52ee11-8fc1-42d3-b90e-a6afae101135.png)
+![image](https://user-images.githubusercontent.com/46463801/207089701-46d9d158-3078-400a-b5da-2910074dbe74.png)
