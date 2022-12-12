@@ -223,12 +223,31 @@ for client_code in client_codes:
 master_df = pd.concat(df_list, ignore_index=True)
 ```
 
-The master dataframe was then filtered to just those journal entries without a balancing entry.
+I then pivoted the master dataframe to sum the amount of unbalanced journal entries and count the number of balanced and unbalanced ejournal entries per customer.
 
 ```Python
-master_df[master_df['Research_Notes'] == 'No match']
+# summarize the data by client
+pv1 = pd.pivot_table(df,values='Amount',index='Client_Number',aggfunc='sum').reset_index().sort_values(by='Amount').rename(columns={'Amount':'Total_unbalanced_amount'})
+pv2 = pd.pivot_table(df,values='Amount',index='Client_Number',aggfunc='count').reset_index().sort_values(by='Amount').rename(columns={'Amount':'Total_count_of_JEs'})
+pv3 = pd.pivot_table(df[df['Research_Notes'] == "No match"],values='Amount',index='Client_Number',aggfunc='count').reset_index().sort_values(by='Amount').rename(columns={'Amount':'Total_count_of_unbalanced_entries'})
+
+pv1.merge(pv2,on='Client_Number').merge(pv3,on='Client_Number')
 ```
 
-There were 1,052 journal entries that did not have a balancing entry. Those entries would need to be audited to determine the root cause of the issue.
+The result of the pivot table was a summary dataframe that allowed me to quickly and easily identify the customers with the most issue. The below table is an excerpt of the output.
 
-## Step 4: Visualize the results in PowerBI
+| Client_Number | Total_unbalanced_amount | Total_count_of_JEs | Total_count_of_unbalanced_entries
+| --- | --- | --- | --- |
+| B18 | 181403.64 | 3839 | 2442
+| B20 | -198273.86 | 2316 | 763
+| B157 | 0 | 15757 | 0
+| B60 | -29072.41 | 46 | 44
+
+## Step 4: Visualize the results in a PowerBI dashboard
+The dataset was then connected to PowerBI and the dataset was transformed and shaped using Power Query Editor. Data was grouped and summarized by customer, column names were edited to be readable to the end user, and calculated columns were added to identify the total number of unbalanced journal entries per customer.
+
+![image](https://user-images.githubusercontent.com/46463801/206954827-5749e123-46c0-4635-930b-7eb4d76eac1f.png)
+
+I then created a dashboard to allow the audience to visualize the analysis and gain insights into the data set. The dashboard helped identify the customers with the largest impact on the unbalanced entry issue, spot potential areas for improvement, and create a continuous monitoring tool that can be leveraged to understand the current state of the unbalanced journal entry issue. The dashboard displays the total number of unbalanced entries that need to be resolved, the total amount unbalanced during the month and how that compares to prior months, and the customers that are the biggest offenders. The dashboard will be refreshed and published on a monthly basis.
+
+![image](https://user-images.githubusercontent.com/46463801/206954056-fa52ee11-8fc1-42d3-b90e-a6afae101135.png)
