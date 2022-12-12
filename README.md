@@ -1,17 +1,10 @@
 # Oracle Fusion Journal Entry (JE) Analysis
 
-**Project goal**
- - The primary goal of the analysis was to extract journal entries from the Oracle Fusion ERP system and identify unbalanced entries for each customer.
- - The analysis and it's insights is used in the audit program of a large national accounting firm
+**Project goal**: The primary goal of the analysis was to extract journal entries from the Oracle Fusion ERP system and identify unbalanced entries for each customer. The analysis is used for internal control testing at a large national accounting firm.
 
-**Tech used**
-- SQL
-- Python
-- PowerBI
+**Tech used**: SQL, Python, PowerBI
  
-**Datasets**
- - The data structure was extracted from Oracle Fusion and contained **1,309,144 rows of data**.
- - The analysis was performed for **1,376 iterations**, one for each unique customer in the Oracle Fusion dataset.
+**Datasets**: The data structure was extracted from Oracle Fusion and contained **1,309,144 rows of data**. The analysis was performed for **1,376 iterations**, one for each unique customer in the Oracle Fusion dataset.
 
 ## Step #1: Query Oracle Fusion's databases using SQL.
 I began the analysis by writing a SQL query to fetch the appropriate data from the database. I needed to analyze all of the journal entries on the chart of accounts, so the SQL query needed to pull a unique identifier for each journal entry, client number, client name, journal description, date, and amount for all of the journal entries made in the last year.
