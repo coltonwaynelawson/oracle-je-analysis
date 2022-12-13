@@ -239,8 +239,6 @@ The result of the pivot table was a summary dataframe that allowed me to quickly
 ## Step 4: Visualize the results in a PowerBI dashboard
 The dataset was then connected to PowerBI and the dataset was transformed and shaped using Power Query Editor. Data was grouped and summarized by customer, column names were edited to be readable to the end user, and calculated columns were added to identify the total number of unbalanced journal entries per customer.
 
-![image](https://user-images.githubusercontent.com/46463801/206954827-5749e123-46c0-4635-930b-7eb4d76eac1f.png)
-
 I then created a dashboard to allow the audience to visualize the analysis and gain insights into the data set. The dashboard helped identify the customers with the largest impact on the unbalanced entry issue, spot potential areas for improvement, and create a continuous monitoring tool that can be leveraged to understand the current state of the unbalanced journal entry issue. The dashboard displays the total number of unbalanced entries that need to be resolved, the total amount unbalanced during the month and how that compares to prior months, and the customers that are the biggest offenders. The dashboard will be refreshed and published on a monthly basis.
 
-![image](https://user-images.githubusercontent.com/46463801/207089701-46d9d158-3078-400a-b5da-2910074dbe74.png)
+![image](https://user-images.githubusercontent.com/46463801/207411158-d296aae9-ba7c-4643-a8b9-3ac6c6abe9e7.png)
